@@ -1,6 +1,6 @@
 {
   "name": "@pyladesprotocol/governance",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "🏛 Governance contracts for the Pylades protocol 💂",
   "author": "Andreas Bigger",
   "license": "MIT",

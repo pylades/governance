@@ -7,7 +7,7 @@ contract FeeTo {
     address public feeRecipient;
 
     struct TokenAllowState {
-        bool    allowed;
+        bool allowed;
         uint128 disallowCount;
     }
     mapping(address => TokenAllowState) public tokenAllowStates;
@@ -50,15 +50,15 @@ contract FeeTo {
     }
 
     function updateTokenAllowStates(address[] memory tokens, bool allowed) public {
-        for (uint i; i < tokens.length; i++) {
+        for (uint256 i; i < tokens.length; i++) {
             updateTokenAllowState(tokens[i], allowed);
         }
     }
 
-    function renounce(address pair) public returns (uint value) {
+    function renounce(address pair) public returns (uint256 value) {
         PairAllowState storage pairAllowState = pairAllowStates[pair];
-        TokenAllowState storage token0AllowState = tokenAllowStates[IUniswapV2Pair(pair).token0()];
-        TokenAllowState storage token1AllowState = tokenAllowStates[IUniswapV2Pair(pair).token1()];
+        TokenAllowState storage token0AllowState = tokenAllowStates[IPyladesPair(pair).token0()];
+        TokenAllowState storage token1AllowState = tokenAllowStates[IPyladesPair(pair).token1()];
 
         // we must renounce if any of the following four conditions are true:
         // 1) token0 is currently disallowed
@@ -71,12 +71,12 @@ contract FeeTo {
             token0AllowState.disallowCount > pairAllowState.token0DisallowCount ||
             token1AllowState.disallowCount > pairAllowState.token1DisallowCount
         ) {
-            value = IUniswapV2Pair(pair).balanceOf(address(this));
+            value = IPyladesPair(pair).balanceOf(address(this));
             if (value > 0) {
                 // burn balance into the pair, effectively redistributing underlying tokens pro-rata back to LPs
                 // (assert because transfer cannot fail with value as balanceOf)
-                assert(IUniswapV2Pair(pair).transfer(pair, value));
-                IUniswapV2Pair(pair).burn(pair);
+                assert(IPyladesPair(pair).transfer(pair, value));
+                IPyladesPair(pair).burn(pair);
             }
 
             // if token0 is allowed, we can now update the pair's disallow count to match the token's
@@ -90,10 +90,10 @@ contract FeeTo {
         }
     }
 
-    function claim(address pair) public returns (uint value) {
+    function claim(address pair) public returns (uint256 value) {
         PairAllowState storage pairAllowState = pairAllowStates[pair];
-        TokenAllowState storage token0AllowState = tokenAllowStates[IUniswapV2Pair(pair).token0()];
-        TokenAllowState storage token1AllowState = tokenAllowStates[IUniswapV2Pair(pair).token1()];
+        TokenAllowState storage token0AllowState = tokenAllowStates[IPyladesPair(pair).token0()];
+        TokenAllowState storage token1AllowState = tokenAllowStates[IPyladesPair(pair).token1()];
 
         // we may claim only if each of the following five conditions are true:
         // 1) token0 is currently allowed
@@ -108,19 +108,23 @@ contract FeeTo {
             token1AllowState.disallowCount == pairAllowState.token1DisallowCount &&
             feeRecipient != address(0)
         ) {
-            value = IUniswapV2Pair(pair).balanceOf(address(this));
+            value = IPyladesPair(pair).balanceOf(address(this));
             if (value > 0) {
                 // transfer tokens to the handler (assert because transfer cannot fail with value as balanceOf)
-                assert(IUniswapV2Pair(pair).transfer(feeRecipient, value));
+                assert(IPyladesPair(pair).transfer(feeRecipient, value));
             }
         }
     }
 }
 
-interface IUniswapV2Pair {
+interface IPyladesPair {
     function token0() external view returns (address);
+
     function token1() external view returns (address);
-    function balanceOf(address owner) external view returns (uint);
-    function transfer(address to, uint value) external returns (bool);
-    function burn(address to) external returns (uint amount0, uint amount1);
+
+    function balanceOf(address owner) external view returns (uint256);
+
+    function transfer(address to, uint256 value) external returns (bool);
+
+    function burn(address to) external returns (uint256 amount0, uint256 amount1);
 }

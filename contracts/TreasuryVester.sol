@@ -1,33 +1,33 @@
 pragma solidity ^0.5.16;
 
-import "./SafeMath.sol";
+import './SafeMath.sol';
 
 contract TreasuryVester {
-    using SafeMath for uint;
+    using SafeMath for uint256;
 
-    address public uni;
+    address public pylades;
     address public recipient;
 
-    uint public vestingAmount;
-    uint public vestingBegin;
-    uint public vestingCliff;
-    uint public vestingEnd;
+    uint256 public vestingAmount;
+    uint256 public vestingBegin;
+    uint256 public vestingCliff;
+    uint256 public vestingEnd;
 
-    uint public lastUpdate;
+    uint256 public lastUpdate;
 
     constructor(
-        address uni_,
+        address pylades_,
         address recipient_,
-        uint vestingAmount_,
-        uint vestingBegin_,
-        uint vestingCliff_,
-        uint vestingEnd_
+        uint256 vestingAmount_,
+        uint256 vestingBegin_,
+        uint256 vestingCliff_,
+        uint256 vestingEnd_
     ) public {
         require(vestingBegin_ >= block.timestamp, 'TreasuryVester::constructor: vesting begin too early');
         require(vestingCliff_ >= vestingBegin_, 'TreasuryVester::constructor: cliff is too early');
         require(vestingEnd_ > vestingCliff_, 'TreasuryVester::constructor: end is too early');
 
-        uni = uni_;
+        pylades = pylades_;
         recipient = recipient_;
 
         vestingAmount = vestingAmount_;
@@ -45,18 +45,19 @@ contract TreasuryVester {
 
     function claim() public {
         require(block.timestamp >= vestingCliff, 'TreasuryVester::claim: not time yet');
-        uint amount;
+        uint256 amount;
         if (block.timestamp >= vestingEnd) {
-            amount = IUni(uni).balanceOf(address(this));
+            amount = IPylades(pylades).balanceOf(address(this));
         } else {
             amount = vestingAmount.mul(block.timestamp - lastUpdate).div(vestingEnd - vestingBegin);
             lastUpdate = block.timestamp;
         }
-        IUni(uni).transfer(recipient, amount);
+        IPylades(pylades).transfer(recipient, amount);
     }
 }
 
-interface IUni {
-    function balanceOf(address account) external view returns (uint);
-    function transfer(address dst, uint rawAmount) external returns (bool);
+interface IPylades {
+    function balanceOf(address account) external view returns (uint256);
+
+    function transfer(address dst, uint256 rawAmount) external returns (bool);
 }
